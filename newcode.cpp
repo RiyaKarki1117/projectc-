@@ -27,13 +27,18 @@ public:
         cout << "Description: " << description << endl;
         cout << "Category   : " << category << endl;
         cout << "Due Date   : " << dueDate << endl;
-        cout << "Priority   : " << (priority == 1 ? "High" : priority == 2 ? "Medium" : "Low") << endl;
+        cout << "Priority   : " << priority << " (" 
+             << (priority == 1 ? "High" : priority == 2 ? "Medium" : "Low") << ")\n";
         cout << "Status     : " << (completed ? "Completed" : "Pending") << endl;
         cout << "-----------------------------\n";
     }
 
     const char* getTitle() const {
         return title;
+    }
+
+    bool isCompleted() const {
+        return completed;
     }
 
     void markCompleted() {
@@ -44,6 +49,54 @@ public:
         strcpy(description, newDesc);
     }
 };
+
+// --- Custom Helpers (No regex, no algorithm) ---
+
+bool toLowerCmp(const char* a, const char* b) {
+    while (*a && *b) {
+        if (tolower(*a) != tolower(*b))
+            return false;
+        a++;
+        b++;
+    }
+    return *a == '\0' && *b == '\0';
+}
+
+bool isValidCategory(const char* input) {
+    return toLowerCmp(input, "work") || toLowerCmp(input, "chores") ||
+           toLowerCmp(input, "school") || toLowerCmp(input, "personal");
+}
+
+bool isValidDateFormat(const char* date) {
+    // Check length == 10 and format YYYY-MM-DD
+    if (strlen(date) != 10) return false;
+    for (int i = 0; i < 10; ++i) {
+        if (i == 4 || i == 7) {
+            if (date[i] != '-') return false;
+        } else {
+            if (!isdigit(date[i])) return false;
+        }
+    }
+    return true;
+}
+
+bool isValidDateValue(const char* date) {
+    int year, month, day;
+    sscanf(date, "%d-%d-%d", &year, &month, &day);
+
+    if (year < 1900 || year > 2100) return false;
+    if (month < 1 || month > 12) return false;
+
+    int daysInMonth[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+    bool leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    if (leap) daysInMonth[1] = 29;
+
+    return (day >= 1 && day <= daysInMonth[month - 1]);
+}
+
+bool isValidDate(const char* date) {
+    return isValidDateFormat(date) && isValidDateValue(date);
+}
 
 int main() {
     int choice;
@@ -82,15 +135,32 @@ int main() {
                 cout << "Enter description: ";
                 cin.getline(desc, 100);
 
-                cout << "Enter category (Work/School/Personal/Chores): ";
-                cin.getline(category, 30);
+                while (true) {
+                    cout << "Enter category (Work/Chores/School/Personal): ";
+                    cin.getline(category, 30);
+                    if (isValidCategory(category)) break;
+                    cout << "Invalid category. Try again.\n";
+                }
 
-                cout << "Enter due date (YYYY-MM-DD): ";
-                cin.getline(dueDate, 20);
+                while (true) {
+                    cout << "Enter due date (YYYY-MM-DD): ";
+                    cin.getline(dueDate, 20);
+                    if (isValidDate(dueDate)) break;
+                    cout << "Invalid date format or value. Try again.\n";
+                }
 
-                cout << "Enter priority (1 = High, 2 = Medium, 3 = Low): ";
-                cin >> priority;
-                cin.ignore();
+                while (true) {
+                    cout << "Enter priority (1 = High, 2 = Medium, 3 = Low): ";
+                    cin >> priority;
+                    if (cin.fail() || priority < 1 || priority > 3) {
+                        cin.clear();
+                        cin.ignore(10000, '\n');
+                        cout << "Invalid priority. Try again.\n";
+                    } else {
+                        cin.ignore(); // clear newline
+                        break;
+                    }
+                }
 
                 t.setData(title, desc, category, dueDate, priority);
                 fout.write((char*)&t, sizeof(t));
@@ -127,11 +197,15 @@ int main() {
 
                 while (file.read((char*)&t, sizeof(t))) {
                     if (strcmp(t.getTitle(), searchTitle) == 0) {
-                        t.markCompleted();
-                        file.seekp(-sizeof(t), ios::cur);
-                        file.write((char*)&t, sizeof(t));
-                        cout << "Task marked as completed.\n";
                         found = true;
+                        if (t.isCompleted()) {
+                            cout << "Task is already marked as completed.\n";
+                        } else {
+                            t.markCompleted();
+                            file.seekp(-sizeof(t), ios::cur);
+                            file.write((char*)&t, sizeof(t));
+                            cout << "Task marked as completed.\n";
+                        }
                         break;
                     }
                 }
