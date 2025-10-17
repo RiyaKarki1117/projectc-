@@ -1,29 +1,39 @@
-//Project for C++ 
 #include <iostream>
 #include <fstream>
 #include <cstring>
 using namespace std;
 
 class Task {
-    int id;
+    char title[50];
     char description[100];
+    char category[30];
+    char dueDate[20];
+    int priority; // 1 = High, 2 = Medium, 3 = Low
     bool completed;
 
 public:
-    void setData(int i, const char d[], bool c = false) {
-        id = i;
+    void setData(const char t[], const char d[], const char c[], const char date[], int p, bool comp = false) {
+        strcpy(title, t);
         strcpy(description, d);
-        completed = c;
+        strcpy(category, c);
+        strcpy(dueDate, date);
+        priority = p;
+        completed = comp;
     }
 
     void display() const {
-        cout << "ID: " << id
-             << " | Description: " << description
-             << " | Status: " << (completed ? "Completed" : "Pending") << endl;
+        cout << "-----------------------------\n";
+        cout << "Title      : " << title << endl;
+        cout << "Description: " << description << endl;
+        cout << "Category   : " << category << endl;
+        cout << "Due Date   : " << dueDate << endl;
+        cout << "Priority   : " << (priority == 1 ? "High" : priority == 2 ? "Medium" : "Low") << endl;
+        cout << "Status     : " << (completed ? "Completed" : "Pending") << endl;
+        cout << "-----------------------------\n";
     }
 
-    int getID() const {
-        return id;
+    const char* getTitle() const {
+        return title;
     }
 
     void markCompleted() {
@@ -63,20 +73,29 @@ int main() {
             case 1: {
                 ofstream fout("tasks.dat", ios::binary | ios::app);
                 Task t;
-                int id;
-                char desc[100];
+                char title[50], desc[100], category[30], dueDate[20];
+                int priority;
 
-                cout << "Enter task ID: ";
-                cin >> id;
-                cin.ignore();
+                cout << "Enter title: ";
+                cin.getline(title, 50);
 
-                cout << "Enter task description: ";
+                cout << "Enter description: ";
                 cin.getline(desc, 100);
+
+                cout << "Enter category (Work/School/Personal/Chores): ";
+                cin.getline(category, 30);
+
+                cout << "Enter due date (YYYY-MM-DD): ";
+                cin.getline(dueDate, 20);
+
+                cout << "Enter priority (1 = High, 2 = Medium, 3 = Low): ";
+                cin >> priority;
                 cin.ignore();
 
-                t.setData(id, desc, false);
+                t.setData(title, desc, category, dueDate, priority);
                 fout.write((char*)&t, sizeof(t));
                 fout.close();
+
                 cout << "Task added successfully!\n";
                 break;
             }
@@ -100,15 +119,14 @@ int main() {
             case 3: {
                 fstream file("tasks.dat", ios::in | ios::out | ios::binary);
                 Task t;
-                int searchID;
+                char searchTitle[50];
                 bool found = false;
 
-                cout << "Enter task ID to mark as completed: ";
-                cin >> searchID;
-                cin.ignore();
+                cout << "Enter task title to mark as completed: ";
+                cin.getline(searchTitle, 50);
 
                 while (file.read((char*)&t, sizeof(t))) {
-                    if (t.getID() == searchID) {
+                    if (strcmp(t.getTitle(), searchTitle) == 0) {
                         t.markCompleted();
                         file.seekp(-sizeof(t), ios::cur);
                         file.write((char*)&t, sizeof(t));
@@ -120,7 +138,7 @@ int main() {
 
                 file.close();
                 if (!found) {
-                    cout << "Task with ID " << searchID << " not found.\n";
+                    cout << "Task with title \"" << searchTitle << "\" not found.\n";
                 }
                 break;
             }
@@ -129,14 +147,14 @@ int main() {
                 ifstream fin("tasks.dat", ios::binary);
                 ofstream temp("temp.dat", ios::binary);
                 Task t;
-                int searchID;
+                char searchTitle[50];
                 bool deleted = false;
 
-                cout << "Enter task ID to delete: ";
-                cin >> searchID;
+                cout << "Enter task title to delete: ";
+                cin.getline(searchTitle, 50);
 
                 while (fin.read((char*)&t, sizeof(t))) {
-                    if (t.getID() == searchID) {
+                    if (strcmp(t.getTitle(), searchTitle) == 0) {
                         cout << "Deleting task:\n";
                         t.display();
                         deleted = true;
@@ -152,7 +170,7 @@ int main() {
                 rename("temp.dat", "tasks.dat");
 
                 if (!deleted) {
-                    cout << "Task with ID " << searchID << " not found.\n";
+                    cout << "Task with title \"" << searchTitle << "\" not found.\n";
                 } else {
                     cout << "Task deleted successfully.\n";
                 }
@@ -162,15 +180,14 @@ int main() {
             case 5: {
                 fstream file("tasks.dat", ios::in | ios::out | ios::binary);
                 Task t;
-                int searchID;
+                char searchTitle[50];
                 bool found = false;
 
-                cout << "Enter task ID to edit: ";
-                cin >> searchID;
-                cin.ignore();
+                cout << "Enter task title to edit: ";
+                cin.getline(searchTitle, 50);
 
                 while (file.read((char*)&t, sizeof(t))) {
-                    if (t.getID() == searchID) {
+                    if (strcmp(t.getTitle(), searchTitle) == 0) {
                         cout << "Current Task:\n";
                         t.display();
 
@@ -189,7 +206,7 @@ int main() {
 
                 file.close();
                 if (!found) {
-                    cout << "Task with ID " << searchID << " not found.\n";
+                    cout << "Task with title \"" << searchTitle << "\" not found.\n";
                 }
                 break;
             }
